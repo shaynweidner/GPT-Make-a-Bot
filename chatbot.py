@@ -41,8 +41,7 @@ class ChatBot:
             json.dump(self.messages, f, indent=4)
         return result
 
-
-def execute(self):
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=self.messages)
-    return completion.choices[0].message.content
+    def execute(self):
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=self.messages)
+        return completion.choices[0].message.content
