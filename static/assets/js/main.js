@@ -3,6 +3,7 @@ const messageForm = document.querySelector('.message-form');
 const messageInput = document.querySelector('.message-input');
 const clearBtn = document.querySelector('#clear-button');
 const messagesContainer = document.querySelector('.messages-container');
+const sendButton = document.querySelector(".send-button");
 
 // Start button handling
 
@@ -20,14 +21,35 @@ messageForm.addEventListener('submit', async (event) => { // Event listener to s
     messagesContainer.scrollTop = messagesContainer.scrollHeight; // scroll to the bottom of the messages container
     if (messageText === '') {
         return;
+    } else {
+        // disable sendButton
+        sendButton.disabled = true; // Disable the send button until the response arrives
+
+        // put.dot-flashing into message bubble while waiting for chatbot response
+        const pendingMessage = messagePending();
+        messagesContainer.appendChild(pendingMessage);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        if (!pendingMessage) {
+            console.error("Failed to create a messagePending element");
+            return;
+        }
     }
 
     try { // try block handles exceptions that may occur within
 
         const message = await createMessage(messageText); // Await to create an chatbot response message  
+
+        const pendingMessage = document.querySelector('.messages-container .message.received .message-pending');
+        if (pendingMessage) {
+          pendingMessage.remove();
+        }
+        
         messagesContainer.appendChild(message); // Once the message response is returned from createMessage function, it will be appended to the message container
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // then scroll to the bottom of the message container
+        sendButton.disabled = false; // re-enable the send button;
     } catch (error) { // Catching any error that could occurs within try block
+        sendButton.disabled = false; // re-enable the send button;
         console.error('There was a problem while creating the message:', error); // log an error message along with error causing details
     }
 });
@@ -138,6 +160,21 @@ function parsePastMessages(arr) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;    // Scrolls down to the latest message in the container
         }
     }
+}
+
+function messagePending() {
+    const response = document.createElement('div');
+    response.classList.add('message', 'received'); // Add CSS classes to the new div element
+
+    const PendingMessage = document.createElement('div');
+    PendingMessage.classList.add('message', 'received'); // Add CSS classes to the new div element
+    const responseText = document.createElement('div');
+    responseText.classList.add('message-pending'); // Add a CSS class to the inner div element holding the message text
+    const dotFlashingDiv = document.createElement('div');
+    dotFlashingDiv.classList.add('dot-flashing'); // Add a CSS class to the inner div element holding the message text    
+    responseText.appendChild(dotFlashingDiv);
+    PendingMessage.append(responseText); // Add the inner div element to the new div element
+    return PendingMessage;
 }
 
 
