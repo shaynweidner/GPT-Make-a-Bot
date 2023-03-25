@@ -1,15 +1,37 @@
 .chat-box {
-    position: relative;
+    position: absolute;
     border: 1px solid #ccc;
     border-radius: 10px;
     font-family: Arial, sans-serif;
-    height: 74vh;
+    height: calc(var(--vh, 1vh) * 70);
     width: 95%;
     display: flex;
     flex-direction: column;
-    /* add this property so .messages-container and .message-form stack vertically */
     justify-content: space-between;
-    /* add this property so .messages-container and .message-form are spaced apart */
+    resize: auto;
+    min-height: -webkit-fill-available;
+    transition: height 0.3s ease-out;
+    /* add a transition for smoother resizing */
+}
+
+/* increase the chat box height when the soft keyboard is showing */
+@media screen and (max-width: 767px) {
+    .chat-box:focus-within {
+        height: calc(var(--vh, 1vh) * 70);
+    }
+}
+
+.messages-container {
+    overflow-y: auto;
+    padding: 10px;
+    flex-grow: 1;
+}
+
+.message-form {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    flex-grow: 0;
 }
 
 .chat-header {
@@ -22,13 +44,6 @@
 
 .chat-header h3 {
     margin: 0;
-}
-
-.messages-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-    margin-bottom: 60px;
 }
 
 body {
@@ -68,19 +83,8 @@ body {
     margin-left: 50px;
 }
 
-.message-form {
-    position: absolute;
-    /* use absolute positioning to pin the message form to the bottom of the chat box */
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-}
-
 .message-input {
-    flex-grow: 1;
+    flex-grow: .5;
     padding: 10px;
     border-radius: 20px;
     border: none;

@@ -1,9 +1,27 @@
+////////////////////////////////////////////////////////////////////
+// web front-end JS.  should be very similar to app front-end JS. //
+////////////////////////////////////////////////////////////////////
+
 const firstMessageToShow = 1;
 const messageForm = document.querySelector('.message-form');
 const messageInput = document.querySelector('.message-input');
 const clearBtn = document.querySelector('#clear-button');
+const undoBtn = document.querySelector('#undo-button');
 const messagesContainer = document.querySelector('.messages-container');
 const sendButton = document.querySelector(".send-button");
+const backend = "/"
+
+function setVhVariable() {
+    // set the value of the --vh variable to the current viewport height
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+// initialize the --vh variable
+setVhVariable();
+
+// update the --vh variable on window resize event
+window.addEventListener('resize', setVhVariable);
 
 // Start button handling
 
@@ -27,13 +45,16 @@ messageForm.addEventListener('submit', async (event) => { // Event listener to s
 
         // put.dot-flashing into message bubble while waiting for chatbot response
         const pendingMessage = messagePending();
-        messagesContainer.appendChild(pendingMessage);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         if (!pendingMessage) {
             console.error("Failed to create a messagePending element");
             return;
         }
+
+        messagesContainer.appendChild(pendingMessage);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+
     }
 
     try { // try block handles exceptions that may occur within
@@ -42,14 +63,23 @@ messageForm.addEventListener('submit', async (event) => { // Event listener to s
 
         const pendingMessage = document.querySelector('.messages-container .message.received .message-pending');
         if (pendingMessage) {
-          pendingMessage.remove();
+            pendingMessage.parentElement.remove();
         }
-        
+
         messagesContainer.appendChild(message); // Once the message response is returned from createMessage function, it will be appended to the message container
         messagesContainer.scrollTop = messagesContainer.scrollHeight; // then scroll to the bottom of the message container
-        sendButton.disabled = false; // re-enable the send button;
+        sendButton.disabled = false; // re-enable the send button;useruser
     } catch (error) { // Catching any error that could occurs within try block
-        sendButton.disabled = false; // re-enable the send button;
+        sendButton.disabled = false; // re-enable the send button;  
+        const pendingMessage = document.querySelector('.messages-container .message.received .message-pending');
+        var getLastSentChild = document.getElementsByClassName("message sent").length - 1;
+        console.log(getLastSentChild);
+        document.getElementsByClassName("message sent")[getLastSentChild].remove();
+        if (pendingMessage) {
+            pendingMessage.remove();
+        }
+        dropLastSentMessage()
+        location.reload();
         console.error('There was a problem while creating the message:', error); // log an error message along with error causing details
     }
 });
@@ -59,8 +89,8 @@ clearBtn.addEventListener('click', (event) => { // Add click event for clearing 
 
     if (confirmed) { // If user confirms to clear the chatbot history then:
         messagesContainer.innerHTML = ''; // Empty out all the previously sent and received messages from the user
-        fetch('/erase_chatbot', { // Call the URL route /erase_chatbot for "POST" request method using "fetch" api
-            method: 'POST', // set the request method as POST to send json data
+        fetch(backend + 'erase_chatbot', { // Call the URL route /erase_chatbot for "POST" request method using "fetch" api
+            method: 'POST', // POST message required for this endpoint
             headers: {
                 'Content-Type': 'application/json' // declare the content type header as json
             },
@@ -80,9 +110,37 @@ clearBtn.addEventListener('click', (event) => { // Add click event for clearing 
     }
 });
 
+undoBtn.addEventListener('click', (event) => { // Add click event for clearing previous conversation histories
+    const confirmed = window.confirm("Are you sure you want to undo your last message?");  // Prompt the user to confirm if they want to clear the chatbot history
+
+    if (confirmed) { // If user confirms to undo their last message then:
+
+        console.log("You clicked the undo button"); // Log a message to the console
+    }
+});
+
 // End button handling
 
-
+function dropLastSentMessage() {
+    fetch(backend + 'drop_last_sent', { // Call the URL route /erase_chatbot for "POST" request method using "fetch" api
+        method: 'POST', // set the request method as POST to send json data
+        headers: {
+            'Content-Type': 'application/json' // declare the content type header as json
+        },
+        body: JSON.stringify({}) // Pass empty json object in the body of request message
+    })
+        .then(response => {
+            if (!response.ok) { // Check if the response result does not contain any error
+                throw new Error('Network response was not ok'); // If response contain errors throw an error
+            }
+        })
+        .then(() => { // when response is ok, set the following operations:
+            console.log("last message sent dropped"); // Reload the current page after some time interval
+        })
+        .catch(error => { // If there is an error in above try block the we can catch it here likewise
+            console.error('There was a problem with the fetch operation:', error); // Log an error message along with error causing details
+        });
+}
 
 // This function takes a message as input and returns a promise that will resolve to the response from the chatbot server
 function createMessage(question) {
@@ -90,7 +148,7 @@ function createMessage(question) {
     // Return a new promise with resolver and rejector functions as arguments
     return new Promise((resolve, reject) => {
         const data = { question } // Create an object with the message text as a property
-        fetch('/chatbot', { // Send a POST request to the /chatbot endpoint of the server
+        fetch(backend + 'chatbot', { // Send a POST request to the /chatbot endpoint of the server
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -126,8 +184,14 @@ function createMessage(question) {
 
 // Function to initialize chat history with past messages
 function initialize() {
+    let headers = new Headers();
+
+    headers.append('Access-Control-Allow-Origin', '*');
     // Fetch conversation history JSON file from the server 
-    fetch('static/_conversation_history.json')
+    fetch(backend + 'serve_json', { // Send a POST request to the /chatbot endpoint of the server
+        method: 'GET',
+        headers: headers
+    })
         .then(response => response.json())  // When data is received, parse it as JSON
         .then(data => {                     // After parsing JSON data
             parsePastMessages(data);         // Call a function to loop through each past message and add to chatbox
@@ -163,9 +227,6 @@ function parsePastMessages(arr) {
 }
 
 function messagePending() {
-    const response = document.createElement('div');
-    response.classList.add('message', 'received'); // Add CSS classes to the new div element
-
     const PendingMessage = document.createElement('div');
     PendingMessage.classList.add('message', 'received'); // Add CSS classes to the new div element
     const responseText = document.createElement('div');
